@@ -46,12 +46,10 @@ app.use((req, res, next) => {
 connectDB();
 
 // 🔹 Serve Static Files
-app.use(express.static(path.join(__dirname, "frontend", "public")));
-
 app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "frontend", "public", "home.html"));
-});
-
+    res.send("Conference Backend API is running ✅");
+  });
+  
 app.use("/api/registrations", registrationRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/submit", paperRoutes);
