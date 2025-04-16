@@ -2,7 +2,7 @@ const Registration = require("../models/Registration");
 
 exports.registerUser = async (req, res) => {
     try {
-        const { name, paperId, paperTitle, institution, phone, email, amountPaid, journalName, feePaid, transactionId } = req.body;
+        const { name, paperId, paperTitle, institution, phone, email, amountPaid,  feePaid, transactionId } = req.body;
 
         if (!name || !paperId || !paperTitle || !institution || !phone || !email || !amountPaid || !feePaid || !transactionId) {
             return res.status(400).json({ error: "❌ All required fields must be filled" });
