@@ -20,7 +20,14 @@ const flash = require("connect-flash");
 const app = express();
 
 // 🔹 Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+      "https://conference-project-frontend.netlify.app", // Your frontend
+      "http://localhost:3000" // For local testing
+    ],
+    methods: ["POST", "GET", "PUT"],
+    credentials: true
+  }));
 app.use(helmet());
 app.use(morgan("dev"));
 app.use(express.urlencoded({ extended: true }));
@@ -71,27 +78,6 @@ const storage = new CloudinaryStorage({
 });
 
 const upload = multer({ storage });
-
-// 🔹 Contact Form Submission
-app.post("/api/contact/contacts", async (req, res) => {
-    const { user_name, user_email, user_phone, user_message } = req.body;
-
-    try {
-        const newContact = new Contact({
-            name: user_name,
-            email: user_email,
-            phone: user_phone,
-            message: user_message
-        });
-
-        await newContact.save();
-        res.status(200).send("Form submitted and data saved successfully!");
-
-    } catch (error) {
-        console.error("Error saving data:", error);
-        res.status(500).send("An error occurred while saving the data.");
-    }
-});
 
 // 🔹 Paper Submission (Uploads to Cloudinary)
 app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
