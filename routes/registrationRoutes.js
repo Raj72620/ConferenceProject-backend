@@ -1,8 +1,31 @@
 const express = require("express");
+const router = express.Router();
 const { registerUser } = require("../controllers/registrationController");
 
-const router = express.Router();
+// Input validation middleware
+const validateRegistration = (req, res, next) => {
+    const requiredFields = [
+        'name', 'paperId', 'paperTitle', 'institution',
+        'phone', 'email', 'amount', 'fee_category',
+        'transaction_id', 'registration_date'
+    ];
+    
+    const missingFields = requiredFields.filter(field => !req.body[field]);
+    
+    if (missingFields.length > 0) {
+        return res.status(400).json({
+            success: false,
+            error: `Missing required fields: ${missingFields.join(', ')}`
+        });
+    }
+    
+    next();
+};
 
-router.post("/register", registerUser);
+// Registration route
+router.post("/register", 
+    validateRegistration,
+    registerUser
+);
 
 module.exports = router;
