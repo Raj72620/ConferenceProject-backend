@@ -22,10 +22,10 @@ const app = express();
 // 🔹 Middleware
 app.use(cors({
     origin: [
-      "https://conference-project-frontend.netlify.app", // Your frontend
-      "http://localhost:3000" // For local testing
+      "https://conferenceproject-frontend.onrender.com", // New Render frontend
+      "http://localhost:3000" 
     ],
-    methods: ["POST", "GET", "PUT"],
+    methods: ["POST", "GET", "PUT", "DELETE"], // Added DELETE
     credentials: true
   }));
 app.use(helmet());
@@ -57,8 +57,8 @@ app.get("/", (req, res) => {
     res.send("Conference Backend API is running ✅");
   });
   
-app.use("/api/registrations", registrationRoutes);
-app.use("/api/contact", contactRoutes);
+  app.use("/register", registrationRoutes);
+  app.use("/api/contact", contactRoutes);
 app.use("/submit", paperRoutes);
 
 // 🔹 Configure Cloudinary

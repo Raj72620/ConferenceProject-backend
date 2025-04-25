@@ -23,9 +23,5 @@ const validateRegistration = (req, res, next) => {
 };
 
 // Registration route
-router.post("/register", 
-    validateRegistration,
-    registerUser
-);
-
+router.post("/register", registerUser); 
 module.exports = router;
