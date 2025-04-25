@@ -22,6 +22,7 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
-// Registration route
-router.post("/register", registerUser); 
+// Registration route - Corrected endpoint
+router.post("/", validateRegistration, registerUser); // Handles POST /api/register
+
 module.exports = router;
