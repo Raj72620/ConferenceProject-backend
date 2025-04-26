@@ -139,6 +139,14 @@ app.get("/papers/:id", async (req, res) => {
 });
 
 // 🔹 Error Handling Middleware (Critical Addition)
+app.use((req, res) => {
+  res.status(404).json({ 
+    success: false,
+    error: "🔍 Endpoint not found" 
+  });
+});
+
+// 🔹 Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error("Global error handler:", err.stack);
   res.status(500).json({

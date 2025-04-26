@@ -16,7 +16,12 @@ exports.registerUser = async (req, res) => {
             registration_date,
             journalName 
         } = req.body;
-
+        if (isNaN(amount)) {
+            return res.status(400).json({
+              success: false,
+              error: "❌ Amount must be a valid number"
+            });
+          }
         // Validate required fields
         const requiredFields = [
             name, paperId, paperTitle, institution,
