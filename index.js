@@ -55,7 +55,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== Routes ====================
-app.use("/api/register", registrationRoutes.route);
+app.use("/api/register", registrationRoutes);
 app.use("/api/contact", contactRoutes);
 app.use("/submit", paperRoutes);
 
