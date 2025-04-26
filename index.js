@@ -23,10 +23,11 @@ const app = express();
 // 🔹 CORS Configuration (Updated)
 app.use(cors({
   origin: [
-    "https://conferenceproject-frontend.onrender.com",
-    "http://localhost:3000"
+      "https://conferenceproject-frontend.onrender.com",
+      "http://localhost:3000"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
@@ -139,10 +140,19 @@ app.get("/papers/:id", async (req, res) => {
 });
 
 // 🔹 Error Handling Middleware (Critical Addition)
+app.use((err, req, res, next) => {
+  console.error('Error:', err.stack);
+  res.status(500).json({ 
+      success: false,
+      error: process.env.NODE_ENV === 'development' ? err.message : 'Server Error'
+  });
+});
+
+// Handle 404s with JSON
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false,
-    error: "🔍 Endpoint not found" 
+  res.status(404).json({
+      success: false,
+      error: "Endpoint not found"
   });
 });
 
