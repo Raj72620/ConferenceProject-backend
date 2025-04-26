@@ -1,6 +1,5 @@
 require("dotenv").config();
 const express = require("express");
-const path = require("path");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -12,39 +11,34 @@ const connectDB = require("./config/db");
 const registrationRoutes = require("./routes/registrationRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const paperRoutes = require("./routes/paperRoutes");
-const Contact = require("./models/Contact");
-const Paper = require("./models/Paper");
 const session = require("express-session");
 const flash = require("connect-flash");
 const app = express();
 
-// ==================== 🔹 CRITICAL FIXES START HERE ====================
+// ==================== Database Connection ====================
+connectDB();
 
-// 🔹 CORS Configuration (Updated)
+// ==================== Middleware Configuration ====================
+// Security middleware
+app.use(helmet());
+app.use(morgan("dev"));
+
+// CORS Configuration
 app.use(cors({
   origin: [
-      "https://conferenceproject-frontend.onrender.com",
-      "http://localhost:3000"
+    "https://conferenceproject-frontend.onrender.com",
+    "http://localhost:3000"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true
 }));
 
-// 🔹 Route Order Fix (MUST COME FIRST)
-app.use("/api/register", registrationRoutes); 
-app.use("/api/contact", contactRoutes);
-app.use("/submit", paperRoutes);
-
-// ==================== 🔹 CRITICAL FIXES END HERE ====================
-
-// 🔹 Security Middleware
-app.use(helmet());
-app.use(morgan("dev"));
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// 🔹 Session Configuration
+// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || "strong-secret-key-here",
   resave: false,
@@ -56,29 +50,35 @@ app.use(session({
 }));
 app.use(flash());
 
-// 🔹 Flash Messages Middleware
+// Flash messages middleware
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.error_msg = req.flash("error_msg");
   next();
 });
 
-// 🔹 Database Connection
-connectDB();
+// ==================== Routes ====================
+app.use("/api/register", registrationRoutes);
+app.use("/api/contact", contactRoutes);
+app.use("/submit", paperRoutes);
 
-// 🔹 Static File Serving (Moved after API routes)
+// Health check endpoint
 app.get("/", (req, res) => {
-  res.send("Conference Backend API is running ✅");
+  res.json({
+    status: "OK",
+    message: "Conference Backend API is running",
+    timestamp: new Date().toISOString()
+  });
 });
 
-// 🔹 Cloudinary Configuration
+// ==================== Cloudinary Configuration ====================
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 🔹 File Upload Configuration
+// File upload configuration
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -89,11 +89,14 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage });
 
-// 🔹 Paper Submission Route
+// Paper submission route
 app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: "No file uploaded" });
+      return res.status(400).json({ 
+        success: false, 
+        error: "No file uploaded" 
+      });
     }
 
     const newPaper = new Paper({
@@ -112,7 +115,6 @@ app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
       paperId: newPaper._id,
       fileUrl: req.file.path
     });
-
   } catch (error) {
     console.error("Paper submission error:", error);
     res.status(500).json({ 
@@ -122,50 +124,27 @@ app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
   }
 });
 
-// 🔹 Paper Retrieval Route
-app.get("/papers/:id", async (req, res) => {
-  try {
-    const paper = await Paper.findById(req.params.id);
-    if (!paper) {
-      return res.status(404).json({ success: false, error: "Paper not found" });
-    }
-    res.json({ success: true, ...paper._doc });
-  } catch (error) {
-    console.error("Paper fetch error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || "Internal server error" 
-    });
-  }
-});
-
-// 🔹 Error Handling Middleware (Critical Addition)
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({ 
-      success: false,
-      error: process.env.NODE_ENV === 'development' ? err.message : 'Server Error'
-  });
-});
-
-// Handle 404s with JSON
-app.use((req, res) => {
+// ==================== Error Handling ====================
+// 404 Handler (must be after all routes)
+app.use("*", (req, res) => {
   res.status(404).json({
-      success: false,
-      error: "Endpoint not found"
+    success: false,
+    error: "Endpoint not found"
   });
 });
 
-// 🔹 Error Handling Middleware
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error("Global error handler:", err.stack);
+  console.error("Global error:", err.stack);
   res.status(500).json({
     success: false,
-    error: process.env.NODE_ENV === "development" ? err.message : "Internal server error"
+    error: process.env.NODE_ENV === "production" 
+      ? "Internal server error" 
+      : err.message
   });
 });
 
-// 🔹 Server Startup
+// ==================== Server Startup ====================
 const PORT = process.env.PORT || 2000;
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
