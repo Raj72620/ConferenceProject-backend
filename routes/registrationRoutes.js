@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { registerUser } = require("../controllers/registrationController");
+const validateRegistration = require("../middleware/validateRegistration");
 
 // Enhanced validation middleware
 const validateRegistration = (req, res, next) => {
