@@ -13,17 +13,17 @@ const contactRoutes = require("./routes/contactRoutes");
 const paperRoutes = require("./routes/paperRoutes");
 const session = require("express-session");
 const flash = require("connect-flash");
+const Paper = require("./models/Paper"); // Added Paper model
+
 const app = express();
 
 // ==================== Database Connection ====================
 connectDB();
 
 // ==================== Middleware Configuration ====================
-// Security middleware
 app.use(helmet());
 app.use(morgan("dev"));
 
-// CORS Configuration
 app.use(cors({
   origin: [
     "https://conferenceproject-frontend.onrender.com",
@@ -34,11 +34,9 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parsing middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
 app.use(session({
   secret: process.env.SESSION_SECRET || "strong-secret-key-here",
   resave: false,
@@ -50,7 +48,6 @@ app.use(session({
 }));
 app.use(flash());
 
-// Flash messages middleware
 app.use((req, res, next) => {
   res.locals.success_msg = req.flash("success_msg");
   res.locals.error_msg = req.flash("error_msg");
@@ -78,7 +75,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// File upload configuration
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -125,7 +121,6 @@ app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
 });
 
 // ==================== Error Handling ====================
-// 404 Handler (must be after all routes)
 app.use("*", (req, res) => {
   res.status(404).json({
     success: false,
@@ -133,14 +128,16 @@ app.use("*", (req, res) => {
   });
 });
 
-// Global error handler
+// Improved error handler
 app.use((err, req, res, next) => {
   console.error("Global error:", err.stack);
-  res.status(500).json({
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
     success: false,
     error: process.env.NODE_ENV === "production" 
       ? "Internal server error" 
-      : err.message
+      : err.message,
+    ...(process.env.NODE_ENV === "development" && { stack: err.stack })
   });
 });
 

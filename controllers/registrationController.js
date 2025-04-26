@@ -2,7 +2,6 @@ const Registration = require("../models/Registration");
 
 exports.registerUser = async (req, res) => {
     try {
-        // Destructure with proper field names
         const { 
             name, 
             paperId, 
@@ -16,23 +15,12 @@ exports.registerUser = async (req, res) => {
             registration_date,
             journalName 
         } = req.body;
+
+        // Validate amount type
         if (isNaN(amount)) {
             return res.status(400).json({
-              success: false,
-              error: "❌ Amount must be a valid number"
-            });
-          }
-        // Validate required fields
-        const requiredFields = [
-            name, paperId, paperTitle, institution,
-            phone, email, amount, fee_category,
-            transaction_id, registration_date
-        ];
-        
-        if (requiredFields.some(field => !field)) {
-            return res.status(400).json({ 
                 success: false,
-                error: "❌ All required fields must be filled" 
+                error: "Amount must be a valid number"
             });
         }
 
@@ -53,7 +41,7 @@ exports.registerUser = async (req, res) => {
             
             return res.status(409).json({
                 success: false,
-                error: `❌ ${conflict} already registered!`
+                error: `${conflict} already registered!`
             });
         }
 
@@ -72,17 +60,17 @@ exports.registerUser = async (req, res) => {
             journalName: journalName || undefined
         });
 
-        // Save to database
         await newRegistration.save();
 
         res.status(201).json({
             success: true,
-            message: "✅ Registration Successful!",
-            registrationId: newRegistration._id
+            message: "Registration Successful!",
+            registrationId: newRegistration._id,
+            data: newRegistration
         });
 
     } catch (error) {
-        console.error("❌ Registration Error:", error);
+        console.error("Registration Error:", error);
         
         // Handle validation errors
         if (error.name === 'ValidationError') {
@@ -98,13 +86,13 @@ exports.registerUser = async (req, res) => {
             const key = Object.keys(error.keyPattern)[0];
             return res.status(409).json({
                 success: false,
-                error: `❌ ${key.replace('_', ' ').toUpperCase()} already exists!`
+                error: `${key.replace('_', ' ')} already exists!`
             });
         }
 
         res.status(500).json({
             success: false,
-            error: error.message || "🛠️ Internal Server Error"
+            error: "Internal Server Error"
         });
     }
 };

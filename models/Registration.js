@@ -9,8 +9,7 @@ const registrationSchema = new mongoose.Schema({
     paperId: {
         type: String,
         required: [true, "Paper ID is required"],
-        uppercase: true,
-        match: [/^ICCIGC-\d{4}-\d{3}$/, 'Invalid paper ID format']
+        uppercase: true
     },
     paperTitle: {
         type: String,
@@ -27,7 +26,7 @@ const registrationSchema = new mongoose.Schema({
         required: [true, "Phone number is required"],
         validate: {
             validator: function(v) {
-                return /^[6-9]\d{9}$/.test(v); // Indian phone number validation
+                return /^[6-9]\d{9}$/.test(v);
             },
             message: props => `${props.value} is not a valid Indian phone number!`
         }
@@ -54,8 +53,7 @@ const registrationSchema = new mongoose.Schema({
     transaction_id: {
         type: String,
         required: [true, "Transaction ID is required"],
-        unique: true,
-        match: [/^TXN-\d{4}-[A-Z0-9]{8}$/, 'Invalid transaction ID format']
+        unique: true
     },
     registration_date: {
         type: Date,
@@ -75,7 +73,7 @@ const registrationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Add compound index for better query performance
+// Compound index remains the same
 registrationSchema.index({ paperId: 1, email: 1 }, { unique: true });
 
 const Registration = mongoose.model("Registration", registrationSchema);
