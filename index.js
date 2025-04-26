@@ -31,7 +31,7 @@ app.use(cors({
 }));
 
 // 🔹 Route Order Fix (MUST COME FIRST)
-app.use("/api/register", registrationRoutes); // Changed to match frontend
+app.use("/api/register", registrationRoutes); 
 app.use("/api/contact", contactRoutes);
 app.use("/submit", paperRoutes);
 
