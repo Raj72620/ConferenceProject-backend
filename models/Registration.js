@@ -9,7 +9,8 @@ const registrationSchema = new mongoose.Schema({
     paperId: {
         type: String,
         required: [true, "Paper ID is required"],
-        uppercase: true
+        uppercase: true,
+        match: [/^ICCIGC-\d{4}-\d{3}$/, 'Invalid paper ID format']
     },
     paperTitle: {
         type: String,
@@ -26,9 +27,9 @@ const registrationSchema = new mongoose.Schema({
         required: [true, "Phone number is required"],
         validate: {
             validator: function(v) {
-                return /^[0-9]{10}$/.test(v);
+                return /^[6-9]\d{9}$/.test(v); // Indian phone number validation
             },
-            message: props => `${props.value} is not a valid phone number!`
+            message: props => `${props.value} is not a valid Indian phone number!`
         }
     },
     email: {
@@ -53,7 +54,8 @@ const registrationSchema = new mongoose.Schema({
     transaction_id: {
         type: String,
         required: [true, "Transaction ID is required"],
-        unique: true
+        unique: true,
+        match: [/^TXN-\d{4}-[A-Z0-9]{8}$/, 'Invalid transaction ID format']
     },
     registration_date: {
         type: Date,
