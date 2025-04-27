@@ -56,7 +56,7 @@ app.use((req, res, next) => {
 
 // ==================== Routes ====================
 app.use("/api/register", registrationRoutes);
-app.use("/api/contact", contactRoutes);
+app.use("/api", contactRoutes);
 app.use("/submit", paperRoutes);
 
 // Health check endpoint
