@@ -1,5 +1,7 @@
+
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const helmet = require("helmet");
@@ -11,141 +13,138 @@ const connectDB = require("./config/db");
 const registrationRoutes = require("./routes/registrationRoutes");
 const contactRoutes = require("./routes/contactRoutes");
 const paperRoutes = require("./routes/paperRoutes");
+const Contact = require("./models/Contact");
+const Paper = require("./models/Paper");
 const session = require("express-session");
 const flash = require("connect-flash");
-const Paper = require("./models/Paper"); // Added Paper model
-
 const app = express();
 
-// ==================== Database Connection ====================
-connectDB();
-
-// ==================== Middleware Configuration ====================
+// 🔹 Middleware
+app.use(cors({
+    origin: [
+      "https://conference-project-frontend.netlify.app", // Your frontend
+      "http://localhost:3000" // For local testing
+    ],
+    methods: ["POST", "GET", "PUT"],
+    credentials: true
+  }));
 app.use(helmet());
 app.use(morgan("dev"));
-
-app.use(cors({
-  origin: [
-    "https://conferenceproject-frontend.onrender.com",
-    "http://localhost:3000"
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-}));
-
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || "strong-secret-key-here",
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 60000 
-  }
-}));
+app.use(express.json());
+app.use(
+    session({
+        secret: "anupriya", // Change this to a strong secret
+        resave: false,
+        saveUninitialized: true,
+        cookie: { maxAge: 60000 }, // Flash message will last for 60 seconds
+    })
+);
 app.use(flash());
 
+// 🔹 Pass Flash Messages to Views
 app.use((req, res, next) => {
-  res.locals.success_msg = req.flash("success_msg");
-  res.locals.error_msg = req.flash("error_msg");
-  next();
+    res.locals.success_msg = req.flash("success_msg");
+    res.locals.error_msg = req.flash("error_msg");
+    next();
 });
 
-// ==================== Routes ====================
-app.use("/api/register", registrationRoutes);
-app.use("/api", contactRoutes); 
+// 🔹 Connect to MongoDB
+connectDB();
+
+// 🔹 Serve Static Files
+app.get("/", (req, res) => {
+    res.send("Conference Backend API is running ✅");
+  });
+  
+app.use("/api/registrations", registrationRoutes);
+app.use("/api/contact", contactRoutes);
 app.use("/submit", paperRoutes);
 
-// Health check endpoint
-app.get("/", (req, res) => {
-  res.json({
-    status: "OK",
-    message: "Conference Backend API is running",
-    timestamp: new Date().toISOString()
-  });
-});
-
-// ==================== Cloudinary Configuration ====================
+// 🔹 Configure Cloudinary
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// 🔹 Configure Multer Storage for Cloudinary
 const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: "research_papers",
-    resource_type: "auto",
-  },
+    cloudinary: cloudinary,
+    params: {
+        folder: "research_papers", // Cloudinary folder
+        resource_type: "auto",
+    },
 });
 
 const upload = multer({ storage });
 
-// Paper submission route
+// 🔹 Paper Submission (Uploads to Cloudinary)
 app.post("/submit/papersubmit", upload.single("file"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ 
-        success: false, 
-        error: "No file uploaded" 
-      });
+    try {
+        console.log("📩 Form Data Received:", req.body);
+        console.log("📄 Uploaded File:", req.file);
+
+        if (!req.file) {
+            throw new Error("No file uploaded!");
+        }
+
+        // Store in MongoDB with Cloudinary URL
+        const newPaper = new Paper({
+            name: req.body.name,
+            institution: req.body.institution,
+            title: req.body.title,
+            email: req.body.email,
+            phone: req.body.phone,
+            research_area: req.body.research_area,
+            journal: req.body.journal,
+            country: req.body.country,
+            filename: req.file.originalname,
+            mimetype: req.file.mimetype,
+            size: req.file.size,
+            fileUrl: req.file.path, // Cloudinary URL
+        });
+
+        await newPaper.save();
+
+        res.json({
+            success: true,
+            message: "Paper submitted successfully!",
+            paperId: newPaper._id,
+            fileUrl: req.file.path, // Cloudinary URL
+        });
+
+    } catch (error) {
+        console.error("❌ Error Handling Submission:", error.message);
+        res.status(500).json({ success: false, error: error.message });
     }
-
-    const newPaper = new Paper({
-      ...req.body,
-      filename: req.file.originalname,
-      mimetype: req.file.mimetype,
-      size: req.file.size,
-      fileUrl: req.file.path
-    });
-
-    await newPaper.save();
-
-    res.json({
-      success: true,
-      message: "Paper submitted successfully",
-      paperId: newPaper._id,
-      fileUrl: req.file.path
-    });
-  } catch (error) {
-    console.error("Paper submission error:", error);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message || "Internal server error" 
-    });
-  }
 });
 
-// ==================== Error Handling ====================
-app.use("*", (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: "Endpoint not found"
-  });
+// 🔹 Retrieve Paper (Returns Cloudinary URL)
+app.get("/papers/:id", async (req, res) => {
+    try {
+        const paper = await Paper.findById(req.params.id);
+
+        if (!paper) {
+            return res.status(404).json({ success: false, message: "Paper not found" });
+        }
+
+        res.json({
+            success: true,
+            filename: paper.filename,
+            mimetype: paper.mimetype,
+            size: paper.size,
+            fileUrl: paper.fileUrl, // Cloudinary URL
+        });
+
+    } catch (error) {
+        console.error("❌ Error Fetching Paper:", error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
 });
 
-// Improved error handler
-app.use((err, req, res, next) => {
-  console.error("Global error:", err.stack);
-  const statusCode = err.statusCode || 500;
-  res.status(statusCode).json({
-    success: false,
-    error: process.env.NODE_ENV === "production" 
-      ? "Internal server error" 
-      : err.message,
-    ...(process.env.NODE_ENV === "development" && { stack: err.stack })
-  });
-});
-
-// ==================== Server Startup ====================
+// 🔹 Start Server
 const PORT = process.env.PORT || 2000;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  if (process.env.NODE_ENV === "development") {
-    console.log(`➡️  Local: http://localhost:${PORT}`);
-  }
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
 });
