@@ -73,7 +73,7 @@ const registrationSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Compound index remains the same
+// Compound index for preventing duplicate registrations
 registrationSchema.index({ paperId: 1, email: 1 }, { unique: true });
 
 const Registration = mongoose.model("Registration", registrationSchema);

@@ -1,4 +1,3 @@
-// middleware/validateRegistration.js
 module.exports = (req, res, next) => {
     const requiredFields = [
         'name', 'paperId', 'paperTitle', 'institution',
